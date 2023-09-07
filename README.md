@@ -70,8 +70,18 @@ Request:
 ```shell
 curl -X POST http://127.0.0.1:8000/bot/send/ \
 -H "Content-Type: application/json" \
--H "Authorization: Token <your-generated-token>" \
+-H "Authorization: Token <your-authorization-token>" \
 -d '{
   "message": "Ayo!"
 }'
+```
+
+### History of your messages
+
+In order to see all the messages you sent, make request:
+
+```shell
+curl -X POST http://127.0.0.1:8000/bot/messages/me/ \
+-H "Content-Type: application/json" \
+-H "Authorization: Token <your-authorization-token>"
 ```
