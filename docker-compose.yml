@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  postgres-db:
+    image: postgres
+    environment:
+      POSTGRES_DB: "fabric"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: ./api
+      dockerfile: ./docker/Dockerfile
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres-db
+    command: start_api
+
+  bot:
+    build:
+      context: ./api
+      dockerfile: ./docker/Dockerfile
+    env_file: .env
+    depends_on:
+      - postgres-db
+    command: start_bot
+
+
