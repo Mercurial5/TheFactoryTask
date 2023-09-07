@@ -1,9 +1,11 @@
 from typing import Protocol
 
 from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 
-from .models import UserBotToken
-from .repositories import UserBotTokenRepository, UserBotTokenRepositoriesInterface
+from .models import UserBotToken, Message
+from .repositories import UserBotTokenRepository, UserBotTokenRepositoriesInterface, MessageRepositoriesInterface, \
+    MessageRepository
 
 User = get_user_model()
 
@@ -33,3 +35,20 @@ class UserBotTokenService:
 
     def bind_token_to_chat_id(self, token: UserBotToken, chat_id: int) -> None:
         return self.repository.bind_token_to_chat_id(token, chat_id)
+
+
+class MessageServicesInterface(Protocol):
+
+    def create_message(self, user: User, chat_id: int, message: str) -> Message: ...
+
+    def get_messages(self, user: User, chat_id: int | None) -> QuerySet[Message]: ...
+
+
+class MessageService:
+    repository: MessageRepositoriesInterface = MessageRepository()
+
+    def create_message(self, user: User, chat_id: int, message: str) -> Message:
+        return self.repository.create_message(user, chat_id, message)
+
+    def get_messages(self, user: User, chat_id: int | None) -> QuerySet[Message]:
+        return self.repository.get_messages(user, chat_id)
