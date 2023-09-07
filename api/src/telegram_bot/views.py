@@ -4,9 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from telegram_bot.serializers import MessageSerializer
-from telegram_bot.services import UserBotTokenService, UserBotTokenServicesInterface
-from telegram_bot.telegram_bot import bot
+from .serializers import SendMessageSerializer, GetMessagesSerializer, RetrieveMessagesSerializer
+from .services import UserBotTokenService, UserBotTokenServicesInterface, MessageServicesInterface, MessageService
+from .telegram_bot import bot
 
 
 @api_view(['GET'])
@@ -22,18 +22,33 @@ def generate_token(request: Request) -> Response:
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
 def send(request: Request) -> Response:
-    serializer = MessageSerializer(data=request.data)
+    serializer = SendMessageSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    service: UserBotTokenServicesInterface = UserBotTokenService()
+    user_bot_token_service: UserBotTokenServicesInterface = UserBotTokenService()
 
-    token = service.get_token_by_user(user=request.user)
+    token = user_bot_token_service.get_token_by_user(user=request.user)
     if not token:
         return Response({'detail': 'You did not generated token!'}, status=status.HTTP_400_BAD_REQUEST)
 
     if not token.chat_id:
         return Response({'detail': 'You did not bind any chat!'}, status=status.HTTP_400_BAD_REQUEST)
 
+    message_service: MessageServicesInterface = MessageService()
     bot.send_message(token.chat_id, serializer.validated_data['message'])
+    message_service.create_message(user=token.user, chat_id=token.chat_id, message=serializer.validated_data['message'])
 
     return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def user_messages(request: Request) -> Response:
+    serializer = GetMessagesSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    service: MessageServicesInterface = MessageService()
+    messages = service.get_messages(request.user, serializer.validated_data.get('chat_id'))
+
+    serializer = RetrieveMessagesSerializer(instance=messages, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

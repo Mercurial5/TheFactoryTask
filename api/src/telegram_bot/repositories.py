@@ -1,8 +1,9 @@
 from typing import Protocol
 
 from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 
-from .models import UserBotToken
+from .models import UserBotToken, Message
 
 User = get_user_model()
 
@@ -47,3 +48,28 @@ class UserBotTokenRepository:
     def bind_token_to_chat_id(token: UserBotToken, chat_id: int) -> None:
         token.chat_id = chat_id
         token.save()
+
+
+class MessageRepositoriesInterface(Protocol):
+
+    @staticmethod
+    def create_message(user: User, chat_id: int, message: str) -> Message: ...
+
+    @staticmethod
+    def get_messages(user: User, chat_id: int | None) -> QuerySet[Message]: ...
+
+
+class MessageRepository:
+
+    @staticmethod
+    def create_message(user: User, chat_id: int, message: str) -> Message:
+        return Message.objects.create(user=user, chat_id=chat_id, message=message)
+
+    @staticmethod
+    def get_messages(user: User, chat_id: int | None) -> QuerySet[Message]:
+        query = Message.objects.filter(user=user)
+
+        if chat_id:
+            query = query.filter(chat_id=chat_id)
+
+        return query.all()
